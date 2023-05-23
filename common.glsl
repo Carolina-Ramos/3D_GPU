@@ -137,9 +137,17 @@ Ray getRay(Camera cam, vec2 pixel_sample)  //rnd pixel_sample viewport coordinat
     vec2 ls = cam.lensRadius * randomInUnitDisk(gSeed);  //ls - lens sample for DOF
     float time = cam.time0 + hash1(gSeed) * (cam.time1 - cam.time0);
     
-    //Calculate eye_offset and ray direction
+    //Calculate eye_offset
+    vec3 eye_offset = ls.x * cam.u + ls.y * cam.v; //offset from the camera eye position to the lens
 
-    return createRay(eye_offset, normalize(ray direction), time);
+    // Calculate ray direction
+    float aspect = cam.width / cam.height;
+    float u = (pixel_sample.x / iResolution.x - 0.5) * cam.width;
+    float v = (pixel_sample.y / iResolution.y - 0.5) * cam.height;
+    vec3 pixel_position = cam.eye + cam.planeDist * cam.n + u * cam.u + v * cam.v - eye_offset;
+    vec3 ray_direction = pixel_position - cam.eye;
+    
+    return createRay(eye_offset, normalize(ray_direction), time);
 }
 
 // MT_ material type
