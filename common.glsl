@@ -245,8 +245,8 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
         {
             outwardNormal = -rec.normal;
             niOverNt = rec.material.refIdx;
-            cosine = refraction cosine for schlick; 
-            atten = apply Beer's law by using rec.material.refractColor
+          //  cosine = refraction cosine for schlick; 
+          //  atten = apply Beer's law by using rec.material.refractColor
         }
         else  //hit from outside
         {
@@ -269,7 +269,7 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
         //else  //Refraction
         // rScattered = calculate refracted ray
            // atten *= vec3(1.0 - reflectProb); not necessary since we are only scattering 1-reflectProb rays and not all refracted rays
-        }
+        //}
 
         return true;
     }
@@ -285,10 +285,43 @@ Triangle createTriangle(vec3 v0, vec3 v1, vec3 v2)
     return t;
 }
 
-bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec)
+bool hit_triangle(Triangle triangle, Ray r, float tmin, float tmax, out HitRecord rec)
 {
-    //INSERT YOUR CODE HERE
     //calculate a valid t and normal
+    vec3 normal;
+    float t;
+    vec3 edge1, edge2, edge3, tvec, pvec, qvec;
+
+	float det, inv_det;
+
+	edge1 = triangle.b - triangle.a;
+	edge2 = triangle.c - triangle.a;
+
+    normal = cross(edge1, edge2);
+	normalize(normal);
+
+	pvec = cross(r.d, edge2);
+
+	det = dot(edge1, pvec);
+
+	if (det < epsilon) return false;
+
+	tvec = r.o - triangle.a;
+
+	float u = dot(tvec, pvec);
+	if (u < 0.0 || u > det) return false;
+
+	qvec = cross(tvec, edge1);
+
+	float v = dot(r.d, qvec);
+	if (v < 0.0 || u + v > det) return false;
+
+	t = dot(edge2, qvec);
+	inv_det = 1.f / det;
+	t *= inv_det;
+	u *= inv_det;
+	v *= inv_det;
+  
     if(t < tmax && t > tmin)
     {
         rec.t = t;
@@ -347,29 +380,31 @@ vec3 center(MovingSphere mvsphere, float time)
 bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec)
 {
     //calculate a valid t and normal
+    float t;
+    vec3 normal;
     vec3 oc = s.center - r.o;
-	float b = r.d * oc;
-	float c = (oc * oc) - pow(s.radius, 2);
+	float b = dot(r.d, oc);
+	float c = dot(oc, oc) - pow(s.radius, 2.0);
 
-    if (c < 0) {
-		t = b + sqrt(pow(b, 2) - c);
+    if (c < 0.0) {
+		t = b + sqrt(pow(b, 2.0) - c);
 	}
 	else {
-		if (b <= 0) return false;
+		if (b <= 0.0) return false;
 		else {
-			if ((pow(b, 2) - c) <= 0) return false;
+			if ((pow(b, 2.0) - c) <= 0.0) return false;
 			else {
-				t = b - sqrt(pow(b, 2) - c);
+				t = b - sqrt(pow(b, 2.0) - c);
 			}
 		}
 	}
 
-    vec3 normal = rec.position - s.center;
+    normal = rec.pos - s.center;
 	
     if(t < tmax && t > tmin) {
         rec.t = t;
         rec.pos = pointOnRay(r, rec.t);
-        rec.normal = normal
+        rec.normal = normal;
         return true;
     }
     else return false;
