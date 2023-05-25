@@ -225,13 +225,15 @@ vec3 rayColor(Ray r)
                 vec3 directLight = directlighting(createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0)), r, rec);
                 col += directLight * throughput;
             }
-           
+
             //calculate secondary ray and update throughput
             Ray scatterRay;
             vec3 atten;
             if(scatter(r, rec, atten, scatterRay))
             {   
-                col += throughput * rayColor(scatterRay);    
+                r.o = scatterRay.o;
+                r.d = scatterRay.d;
+                r.t = scatterRay.t;
             }
             else
             {
