@@ -135,6 +135,7 @@ Camera createCamera(
 Ray getRay(Camera cam, vec2 pixel_sample)  //rnd pixel_sample viewport coordinates
 {
     vec2 ls = cam.lensRadius * randomInUnitDisk(gSeed);  //ls - lens sample for DOF
+   // vec3 p = cam.focuDist*width
     float time = cam.time0 + hash1(gSeed) * (cam.time1 - cam.time0);
     
     //Calculate eye_offset
@@ -211,6 +212,22 @@ struct HitRecord
     Material material;
 };
 
+bool customRefract(vec3 v, vec3 n, float niOverNt, out vec3 refracted) {
+  vec3 uv = normalize(v);
+  float dt = dot(uv, n);
+  float discriminant = 1.0 - niOverNt * niOverNt * (1.0 - dt * dt);
+  if (discriminant > 0.0) {
+    refracted = niOverNt * (uv - n * dt) - n * sqrt(discriminant);
+    return true; // Refraction occurred
+  } else {
+    refracted = vec3(0.0);
+    return false; // Total internal reflection
+  }
+}
+
+vec3 metalSchlick(float cosTheta, vec3 specColor) {
+  return specColor + (vec3(1.0) - specColor) * pow(1.0 - cosTheta, 5.0);
+}
 
 float schlick(float cosine, float refIdx)
 {
@@ -218,20 +235,33 @@ float schlick(float cosine, float refIdx)
     r0 = r0 * r0;
    
 	return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
+    //return r0 + (1.0 - r0) * pow(clamp(1.0 - cosine, 0.0, 1.0), 5.0);
 }
 
 bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
 {
     if(rec.material.type == MT_DIFFUSE)
     {
-        //INSERT CODE HERE,
+        //INSERT CODE HERE, arranjar para não ficar igual ao prof
+        vec3 normal = rec.normal;
+        if(dot(rIn.d, rec.normal) > 0.0)
+            normal *= -1.0;
+        vec3 target = rec.pos + normal + randomUnitVector(gSeed);
+        rScattered = createRay(rec.pos + epsilon * normal, normalize(target - rec.pos), rIn.t);
+        //float cosTheta = dot( n, l);
         atten = rec.material.albedo * max(dot(rScattered.d, rec.normal), 0.0) / pi;
         return true;
     }
     if(rec.material.type == MT_METAL)
     {
        //INSERT CODE HERE, consider fuzzy reflections
-        atten = rec.material.specColor;
+        vec3 refl = reflect(rIn.d, rec.normal);
+        vec3 recPos = epsilon + rec.pos * rec.normal;
+        vec2 perturbation = rec.material.roughness * randomInUnitDisk(gSeed);
+        vec3 scatteredDirection = normalize(refl + vec3(perturbation, 0.0));
+        rScattered= createRay(recPos, scatteredDirection, rIn.t);
+        atten = metalSchlick(-dot(rIn.d, rec.normal), rec.material.specColor);
+        //atten = rec.material.specColor;
         return true;
     }
     if(rec.material.type == MT_DIALECTRIC)
@@ -241,36 +271,49 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
         float niOverNt;
         float cosine;
 
+        cosine = -dot(rIn.d, rec.normal);
+
         if(dot(rIn.d, rec.normal) > 0.0) //hit inside
         {
             outwardNormal = -rec.normal;
             niOverNt = rec.material.refIdx;
-          //  cosine = refraction cosine for schlick; 
-          //  atten = apply Beer's law by using rec.material.refractColor
+            atten = exp(-rec.material.refractColor*rec.t); //beer law
+            //cosine = refraction cosine for schlick; 
+            //atten = apply Beer's law by using rec.material.refractColor
         }
         else  //hit from outside
         {
             outwardNormal = rec.normal;
             niOverNt = 1.0 / rec.material.refIdx;
-            cosine = -dot(rIn.d, rec.normal); 
+           // cosine = -dot(rIn.d, rec.normal); 
         }
 
         //Use probabilistic math to decide if scatter a reflected ray or a refracted ray
-
+        vec3 refracted;
         float reflectProb;
 
+        if(customRefract(rIn.d, outwardNormal, niOverNt, refracted)) //no total internal reflection
+        {
+            if(niOverNt > 1.0) {
+                cosine = sqrt(1.0-niOverNt*niOverNt*(1.0 * cosine*cosine));
+            }
+            reflectProb = schlick(cosine, rec.material.refIdx);
+        }
+        else
+        {
+            reflectProb = 1.0;
+        }
         //if no total reflection  reflectProb = schlick(cosine, rec.material.refIdx);  
         //else reflectProb = 1.0;
 
         if( hash1(gSeed) < reflectProb)  //Reflection
-        // rScattered = calculate reflected ray
+            rScattered= refl;
           // atten *= vec3(reflectProb); not necessary since we are only scattering reflectProb rays and not all reflected rays
         
-        //else  //Refraction
-        // rScattered = calculate refracted ray
+        else  //Refraction
+            rScattered = calculateRefractedRay(rIn.direction, rec.normal, niOverNt);
            // atten *= vec3(1.0 - reflectProb); not necessary since we are only scattering 1-reflectProb rays and not all refracted rays
-        //}
-
+    
         return true;
     }
     return false;
@@ -368,7 +411,8 @@ MovingSphere createMovingSphere(vec3 center0, vec3 center1, float radius, float 
 
 vec3 center(MovingSphere mvsphere, float time)
 {
-    return moving_center;
+    //return mvsphere.center0 + ((time - mvsphere.time0) / (mvsphere.time1 - mvsphere.time0)* center1-center0?);
+    return vec3(0.0,0.0,0.0);
 }
 
 
@@ -415,7 +459,9 @@ bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitReco
     float B, C, delta;
     bool outside;
     float t;
+    vec3 normal;
 
+   // vec3 sphereCen;
 
      //INSERT YOUR CODE HERE
      //Calculate the moving center
