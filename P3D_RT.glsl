@@ -186,6 +186,7 @@ vec3 rayColor(Ray r)
         if(hit_world(r, 0.001, 10000.0, rec))
         {
             //calculate direct lighting with 3 white point lights:
+            bool outside = dot(r.d, rec.normal);//mais coisas
             {
                 //createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0))
                 //createPointLight(vec3(8.0, 15.0, 3.0), vec3(1.0, 1.0, 1.0))
@@ -262,3 +263,6 @@ void main()
     color = mix(prevLinear, color, 1.0/w);
     gl_FragColor = vec4(toGamma(color), w);
 }
+
+//direct light
+//if(hitorld())
