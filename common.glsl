@@ -346,8 +346,25 @@ vec3 center(MovingSphere mvsphere, float time)
 
 bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec)
 {
-    //INSERT YOUR CODE HERE
     //calculate a valid t and normal
+    vec3 oc = s.center - r.o;
+	float b = r.d * oc;
+	float c = (oc * oc) - pow(s.radius, 2);
+
+    if (c < 0) {
+		t = b + sqrt(pow(b, 2) - c);
+	}
+	else {
+		if (b <= 0) return false;
+		else {
+			if ((pow(b, 2) - c) <= 0) return false;
+			else {
+				t = b - sqrt(pow(b, 2) - c);
+			}
+		}
+	}
+
+    vec3 normal = rec.position - s.center;
 	
     if(t < tmax && t > tmin) {
         rec.t = t;
