@@ -240,6 +240,7 @@ float schlick(float cosine, float refIdx)
 
 bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
 {
+    vec3 recPos;
     if(rec.material.type == MT_DIFFUSE)
     {
         //INSERT CODE HERE, arranjar para não ficar igual ao prof
@@ -256,7 +257,7 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
     {
        //INSERT CODE HERE, consider fuzzy reflections
         vec3 refl = reflect(rIn.d, rec.normal);
-        vec3 recPos = epsilon + rec.pos * rec.normal;
+        recPos = epsilon + rec.pos * rec.normal;
         vec2 perturbation = rec.material.roughness * randomInUnitDisk(gSeed);
         vec3 scatteredDirection = normalize(refl + vec3(perturbation, 0.0));
         rScattered= createRay(recPos, scatteredDirection, rIn.t);
@@ -307,11 +308,11 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
         //else reflectProb = 1.0;
 
         if( hash1(gSeed) < reflectProb)  //Reflection
-            rScattered= refl;
+            rScattered = createRay(recPos, reflect(rIn.d, rec.normal));
           // atten *= vec3(reflectProb); not necessary since we are only scattering reflectProb rays and not all reflected rays
         
         else  //Refraction
-            rScattered = calculateRefractedRay(rIn.direction, rec.normal, niOverNt);
+            rScattered = createRay(recPos, refracted);
            // atten *= vec3(1.0 - reflectProb); not necessary since we are only scattering 1-reflectProb rays and not all refracted rays
     
         return true;
