@@ -135,20 +135,20 @@ Camera createCamera(
 Ray getRay(Camera cam, vec2 pixel_sample)  //rnd pixel_sample viewport coordinates
 {
     vec2 ls = cam.lensRadius * randomInUnitDisk(gSeed);  //ls - lens sample for DOF
-   // vec3 p = cam.focuDist*width
     float time = cam.time0 + hash1(gSeed) * (cam.time1 - cam.time0);
     
     //Calculate eye_offset
     vec3 eye_offset = ls.x * cam.u + ls.y * cam.v; //offset from the camera eye position to the lens
-
+    vec3 ray_origin = cam.eye + eye_offset;
     // Calculate ray direction
-    float aspect = cam.width / cam.height;
+   
     float u = (pixel_sample.x / iResolution.x - 0.5) * cam.width;
     float v = (pixel_sample.y / iResolution.y - 0.5) * cam.height;
+   
     vec3 pixel_position = cam.eye + cam.planeDist * cam.n + u * cam.u + v * cam.v - eye_offset;
     vec3 ray_direction = pixel_position - cam.eye;
     
-    return createRay(eye_offset, normalize(ray_direction), time);
+    return createRay(ray_origin, normalize(ray_direction), time);
 }
 
 // MT_ material type
@@ -234,8 +234,8 @@ float schlick(float cosine, float refIdx)
     float r0 = (1.0 - refIdx) / (1.0 + refIdx);
     r0 = r0 * r0;
    
-	return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
-    //return r0 + (1.0 - r0) * pow(clamp(1.0 - cosine, 0.0, 1.0), 5.0);
+	//return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
+    return r0 + (1.0 - r0) * pow(clamp(1.0 - cosine, 0.0, 1.0), 5.0);
 }
 
 bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
