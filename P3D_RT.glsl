@@ -163,16 +163,45 @@ if(hit_sphere(
     return hit;
 }
 
-vec3 directlighting(pointLight pl, Ray r, HitRecord rec){
-    vec3 diffCol, specCol;
-    vec3 colorOut = vec3(0.0, 0.0, 0.0);
-    float shininess;
+vec3 directlighting(pointLight pl, Ray r, HitRecord rec)
+{
+    vec3 diffCol = rec.material.albedo;
+    vec3 specCol = rec.material.specColor;
+    float shininess = rec.material.roughness;
+    vec3 colorOut = vec3(0.0);
     HitRecord dummy;
 
-   //INSERT YOUR CODE HERE
-    
-	return colorOut; 
+    // Calculate the direction from the hit point to the light source
+    vec3 lightDir = normalize(pl.pos - rec.pos);
+
+    // Calculate the distance from the hit point to the light source
+    float lightDist = distance(pl.pos, rec.pos);
+
+    // Create a shadow ray from the hit point towards the light source
+    Ray ray = createRay(rec.pos + 0.001 * rec.normal, lightDir);
+
+    // Check if the shadow ray intersects any objects in the scene
+    if (!hit_world(ray, 0.001, lightDist - 0.001, dummy))
+    {
+        // Calculate the Lambertian shading term
+        float lambertian = max(dot(rec.normal, lightDir), 0.0);
+
+        // Calculate the specular reflection term
+        vec3 viewDir = normalize(-r.d);
+        vec3 reflectDir = reflect(-lightDir, rec.normal);
+        float specular = pow(max(dot(reflectDir, viewDir), 0.0), shininess);
+
+        // Calculate the light attenuation
+        float attenuation = 1.0 / (1.0 + 0.01 * lightDist + 0.001 * (lightDist * lightDist));
+
+        // Compute the final direct lighting contribution
+        colorOut = diffCol * lambertian + specCol * specular;
+        colorOut *= pl.color * attenuation;
+    }
+
+    return colorOut;
 }
+
 
 #define MAX_BOUNCES 10
 
@@ -186,20 +215,29 @@ vec3 rayColor(Ray r)
         if(hit_world(r, 0.001, 10000.0, rec))
         {
             //calculate direct lighting with 3 white point lights:
-            bool outside = dot(r.d, rec.normal);//mais coisas
+            //bool outside = dot(r.d, rec.normal); //mais coisas
             {
-                //createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0))
-                //createPointLight(vec3(8.0, 15.0, 3.0), vec3(1.0, 1.0, 1.0))
-                //createPointLight(vec3(1.0, 15.0, -9.0), vec3(1.0, 1.0, 1.0))
+                createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0));
+                createPointLight(vec3(8.0, 15.0, 3.0), vec3(1.0, 1.0, 1.0));
+                createPointLight(vec3(1.0, 15.0, -9.0), vec3(1.0, 1.0, 1.0));
 
                 //for instance: col += directlighting(createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
+                vec3 directLight = directlighting(createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0)), r, rec);
+                col += directLight * throughput;
             }
            
             //calculate secondary ray and update throughput
             Ray scatterRay;
             vec3 atten;
             if(scatter(r, rec, atten, scatterRay))
-            {   //  insert your code here    }
+            {   
+                col += throughput * rayColor(scatterRay);    
+            }
+            else
+            {
+                col += throughput * vec3(0.0);
+                break;
+            }
         
         }
         else  //background
@@ -263,6 +301,3 @@ void main()
     color = mix(prevLinear, color, 1.0/w);
     gl_FragColor = vec4(toGamma(color), w);
 }
-
-//direct light
-//if(hitorld())
