@@ -165,38 +165,30 @@ if(hit_sphere(
 
 vec3 directlighting(pointLight pl, Ray r, HitRecord rec)
 {
-    vec3 diffCol = rec.material.albedo;
-    vec3 specCol = rec.material.specColor;
-    float shininess = rec.material.roughness;
-    vec3 colorOut = vec3(0.0);
+    vec3 diffCol, specCol;
+    vec3 colorOut = vec3(0.0, 0.0, 0.0);
+    float shininess = 0.5f;
     HitRecord dummy;
 
-    // Calculate the direction from the hit point to the light source
-    vec3 lightDir = normalize(pl.pos - rec.pos);
-
+    vec3 n = normalize(rec.normal);
+   
     // Calculate the distance from the hit point to the light source
-    float lightDist = distance(pl.pos, rec.pos);
+    float lightDist = distance(pl.pos, rec.pos + n * epsilon);
+    // Calculate the direction from the hit point to the light source
+    vec3 lightDir = normalize(pl.pos - (rec.pos + n * epsilon));
 
     // Create a shadow ray from the hit point towards the light source
-    Ray ray = createRay(rec.pos + 0.001 * rec.normal, lightDir);
+    Ray ray = createRay(rec.pos + epsilon * n, lightDir);
 
     // Check if the shadow ray intersects any objects in the scene
-    if (!hit_world(ray, 0.001, lightDist - 0.001, dummy))
+    if (!hit_world(ray, epsilon, lightDist - epsilon, dummy))
     {
-        // Calculate the Lambertian shading term
-        float lambertian = max(dot(rec.normal, lightDir), 0.0);
-
-        // Calculate the specular reflection term
+        vec3 h = normalize(lightDir - r.d);
+		diffCol = rec.material.albedo * max((n * lightDir), 0.0f) * shininess;
         vec3 viewDir = normalize(-r.d);
-        vec3 reflectDir = reflect(-lightDir, rec.normal);
-        float specular = pow(max(dot(reflectDir, viewDir), 0.0), shininess);
-
-        // Calculate the light attenuation
-        float attenuation = 1.0 / (1.0 + 0.01 * lightDist + 0.001 * (lightDist * lightDist));
-
-        // Compute the final direct lighting contribution
-        colorOut = diffCol * lambertian + specCol * specular;
-        colorOut *= pl.color * attenuation;
+        vec3 reflectDir = reflect(-lightDir, n);
+		specCol = rec.material.specColor * pow(max(dot(reflectDir, viewDir), 0.0), rec.material.roughness) * shininess;
+		colorOut += pl.color * (diffCol + specCol);
     }
 
     return colorOut;
@@ -212,7 +204,7 @@ vec3 rayColor(Ray r)
     vec3 throughput = vec3(1.0f, 1.0f, 1.0f);
     for(int i = 0; i < MAX_BOUNCES; ++i)
     {
-        if(hit_world(r, 0.001, 10000.0, rec))
+        if(hit_world(r, epsilon, 10000.0, rec))
         {
             //calculate direct lighting with 3 white point lights:
             //bool outside = dot(r.d, rec.normal); //mais coisas
