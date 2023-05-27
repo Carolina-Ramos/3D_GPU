@@ -167,7 +167,7 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec)
 {
     vec3 diffCol, specCol;
     vec3 colorOut = vec3(0.0, 0.0, 0.0);
-    float shininess = 0.7f;
+    float shininess = 0.5f;
     HitRecord dummy;
     //int numSamples = 3;
 
@@ -191,10 +191,8 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec)
         if (!hit_world(ray, epsilon, lightDist - epsilon, dummy))
         {
             vec3 h = normalize(lightDir - r.d);
-            diffCol = rec.material.albedo * max((n * lightDir), 0.0f) * shininess;
-            vec3 viewDir = normalize(-r.d);
-            vec3 reflectDir = reflect(-lightDir, n);
-            specCol = rec.material.specColor * pow(max(dot(reflectDir, viewDir), 0.0), rec.material.roughness) * shininess;
+            diffCol = rec.material.albedo * rec.material.refIdx * max((n * lightDir), 0.0f) * shininess;
+            specCol = rec.material.specColor * rec.material.refIdx * pow(max(dot(h, n), 0.0f), rec.material.roughness) * shininess;
             colorOut += pl.color * (diffCol + specCol);
         }
   //  }
