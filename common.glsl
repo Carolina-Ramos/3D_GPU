@@ -227,7 +227,6 @@ float schlick(float cosine, float refIdx)
     float r0 = (1.0 - refIdx) / (1.0 + refIdx);
     r0 = r0 * r0;
    
-	//return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
     return r0 + (1.0 - r0) * pow(clamp(1.0 - cosine, 0.0, 1.0), 5.0);
 }
 
@@ -236,26 +235,24 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
     vec3 recPos;
     if(rec.material.type == MT_DIFFUSE)
     {
-        //INSERT CODE HERE, arranjar para não ficar igual ao prof
+        //arranjar para não ficar igual ao prof
         vec3 normal = rec.normal;
         if(dot(rIn.d, rec.normal) > 0.0)
             normal *= -1.0;
         vec3 target = rec.pos + normal + randomUnitVector(gSeed);
         rScattered = createRay(rec.pos + epsilon * normal, normalize(target - rec.pos), rIn.t);
-        //float cosTheta = dot( n, l);
         atten = rec.material.albedo * max(dot(rScattered.d, rec.normal), 0.0) / pi;
         return true;
     }
     if(rec.material.type == MT_METAL)
     {
-       //INSERT CODE HERE, consider fuzzy reflections
+       //consider fuzzy reflections
         vec3 refl = reflect(rIn.d, rec.normal);
         recPos = epsilon + rec.pos * rec.normal;
         vec2 perturbation = rec.material.roughness * randomInUnitDisk(gSeed);
         vec3 scatteredDirection = normalize(refl + vec3(perturbation, 0.0));
         rScattered= createRay(recPos, scatteredDirection, rIn.t);
         atten = metalSchlick(-dot(rIn.d, rec.normal), rec.material.specColor);
-        //atten = rec.material.specColor;
         return true;
     }
     if(rec.material.type == MT_DIALECTRIC)
@@ -272,14 +269,11 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
             outwardNormal = -rec.normal;
             niOverNt = rec.material.refIdx;
             atten = exp(-rec.material.refractColor*rec.t); //beer law
-            //cosine = refraction cosine for schlick; 
-            //atten = apply Beer's law by using rec.material.refractColor
         }
         else  //hit from outside
         {
             outwardNormal = rec.normal;
             niOverNt = 1.0 / rec.material.refIdx;
-           // cosine = -dot(rIn.d, rec.normal); 
         }
 
         //Use probabilistic math to decide if scatter a reflected ray or a refracted ray
@@ -297,17 +291,15 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
         {
             reflectProb = 1.0;
         }
-        //if no total reflection  reflectProb = schlick(cosine, rec.material.refIdx);  
-        //else reflectProb = 1.0;
 
-        if( hash1(gSeed) < reflectProb)  //Reflection
+        if( hash1(gSeed) < reflectProb) { //Reflection
             rScattered = createRay(recPos, reflect(rIn.d, rec.normal));
-          // atten *= vec3(reflectProb); not necessary since we are only scattering reflectProb rays and not all reflected rays
-        
-        else  //Refraction
+            //atten *= vec3(reflectProb); //not necessary since we are only scattering reflectProb rays and not all reflected rays
+        }
+        else{  //Refraction
             rScattered = createRay(recPos, refracted);
-           // atten *= vec3(1.0 - reflectProb); not necessary since we are only scattering 1-reflectProb rays and not all refracted rays
-    
+            //atten *= vec3(1.0 - reflectProb); // not necessary since we are only scattering 1-reflectProb rays and not all refracted rays
+        }
         return true;
     }
     return false;

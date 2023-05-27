@@ -167,29 +167,37 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec)
 {
     vec3 diffCol, specCol;
     vec3 colorOut = vec3(0.0, 0.0, 0.0);
-    float shininess = 0.5f;
+    float shininess = 0.7f;
     HitRecord dummy;
+    //int numSamples = 3;
 
-    vec3 n = normalize(rec.normal);
-   
-    // Calculate the distance from the hit point to the light source
-    float lightDist = distance(pl.pos, rec.pos + n * epsilon);
-    // Calculate the direction from the hit point to the light source
-    vec3 lightDir = normalize(pl.pos - (rec.pos + n * epsilon));
+   /* for (int p = 0; p < numSamples; p++) {
+        float u = rand(vec2(0.0, 1.0));
+        float v = rand(vec2(0.0, 1.0));
 
-    // Create a shadow ray from the hit point towards the light source
-    Ray ray = createRay(rec.pos + epsilon * n, lightDir);
+        vec3 pos = pl.pos + 0.5f * (u + 0.5f) + 0.5f * (v + 0.5f);*/
 
-    // Check if the shadow ray intersects any objects in the scene
-    if (!hit_world(ray, epsilon, lightDist - epsilon, dummy))
-    {
-        vec3 h = normalize(lightDir - r.d);
-		diffCol = rec.material.albedo * max((n * lightDir), 0.0f) * shininess;
-        vec3 viewDir = normalize(-r.d);
-        vec3 reflectDir = reflect(-lightDir, n);
-		specCol = rec.material.specColor * pow(max(dot(reflectDir, viewDir), 0.0), rec.material.roughness) * shininess;
-		colorOut += pl.color * (diffCol + specCol);
-    }
+        vec3 n = normalize(rec.normal);
+    
+        // Calculate the distance from the hit point to the light source
+        float lightDist = distance(pl.pos, rec.pos + n * epsilon);
+        // Calculate the direction from the hit point to the light source
+        vec3 lightDir = normalize(pl.pos - (rec.pos + n * epsilon));
+
+        // Create a shadow ray from the hit point towards the light source
+        Ray ray = createRay(rec.pos + epsilon * n, lightDir);
+
+        // Check if the shadow ray intersects any objects in the scene
+        if (!hit_world(ray, epsilon, lightDist - epsilon, dummy))
+        {
+            vec3 h = normalize(lightDir - r.d);
+            diffCol = rec.material.albedo * max((n * lightDir), 0.0f) * shininess;
+            vec3 viewDir = normalize(-r.d);
+            vec3 reflectDir = reflect(-lightDir, n);
+            specCol = rec.material.specColor * pow(max(dot(reflectDir, viewDir), 0.0), rec.material.roughness) * shininess;
+            colorOut += pl.color * (diffCol + specCol);
+        }
+  //  }
 
     return colorOut;
 }
@@ -202,6 +210,12 @@ vec3 rayColor(Ray r)
     HitRecord rec;
     vec3 col = vec3(0.0);
     vec3 throughput = vec3(1.0f, 1.0f, 1.0f);
+    pointLight pointL[3];
+
+    pointL[0] = createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0));
+    pointL[1] = createPointLight(vec3(8.0, 15.0, 3.0), vec3(1.0, 1.0, 1.0));
+    pointL[2] = createPointLight(vec3(1.0, 15.0, -9.0), vec3(1.0, 1.0, 1.0));
+
     for(int i = 0; i < MAX_BOUNCES; ++i)
     {
         if(hit_world(r, epsilon, 10000.0, rec))
@@ -209,13 +223,11 @@ vec3 rayColor(Ray r)
             //calculate direct lighting with 3 white point lights:
             //bool outside = dot(r.d, rec.normal); //mais coisas
             {
-                createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0));
-                createPointLight(vec3(8.0, 15.0, 3.0), vec3(1.0, 1.0, 1.0));
-                createPointLight(vec3(1.0, 15.0, -9.0), vec3(1.0, 1.0, 1.0));
-
-                //for instance: col += directlighting(createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
-                vec3 directLight = directlighting(createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0)), r, rec);
-                col += directLight * throughput;
+                for(int d = 0; d < 3; d++) {
+                
+                    vec3 directLight = directlighting(pointL[d], r, rec);
+                    col += directLight * throughput;
+                }
             }
 
             //calculate secondary ray and update throughput
@@ -223,9 +235,10 @@ vec3 rayColor(Ray r)
             vec3 atten;
             if(scatter(r, rec, atten, scatterRay))
             {   
-                r.o = scatterRay.o;
+                r = scatterRay;
+                /*r.o = scatterRay.o;
                 r.d = scatterRay.d;
-                r.t = scatterRay.t;
+                r.t = scatterRay.t;*/
             }
             else
             {
