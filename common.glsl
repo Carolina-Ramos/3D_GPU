@@ -404,8 +404,8 @@ MovingSphere createMovingSphere(vec3 center0, vec3 center1, float radius, float 
 
 vec3 center(MovingSphere mvsphere, float time)
 {
-    //return mvsphere.center0 + ((time - mvsphere.time0) / (mvsphere.time1 - mvsphere.time0)* center1-center0?);
-    return vec3(0.0,0.0,0.0);
+    return mvsphere.center0 + (mvsphere.center1 - mvsphere.center0) * ((time - mvsphere.time0) / (mvsphere.time1 - mvsphere.time0));
+    //return vec3(0.0,0.0,0.0);
 }
 
 
@@ -449,9 +449,6 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec)
     if(t < tmax && t > tmin) {
         rec.t = t;
         rec.pos = pointOnRay(r, rec.t);
-        //rec.normal = normalize(rec.pos - s.center) * (s.radius < 0.0 ? -1.0 : 1.0);
-        //rec.normal = normalize((rec.pos - s.center) / s.radius);
-        //rec.normal = inside ? rec.normal * -1.0 : rec.normal;
         rec.normal = s.radius >= 0.0 ? normalize(rec.pos - s.center) : normalize(s.center - rec.pos);
         return true;
     }
@@ -461,24 +458,44 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec)
 
 bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec)
 {
-    float B, C, delta;
-    bool outside;
-    float t;
-    vec3 normal;
-
-   // vec3 sphereCen;
-
      //INSERT YOUR CODE HERE
-     //Calculate the moving center
     //calculate a valid t and normal
+	
+    float t = 0.0f;
+    vec3 center = center(s, r.t);
+    // https://www.scratchapixel.com/code.php?id=10&origin=/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes
+	vec3 L = r.o - center;
+	//float a = r.direction * r.direction;
+	float b = dot(L, r.d); //dot product of the above vector and the ray's vector
+	float c = dot(L, L) - s.radius * s.radius;
+
+    // if origin of ray is outside the sphere and r is pointing away from it
+    if(c>0.0 && b >0.0){
+        return false;
+    }
+    
+	float discriminant = (b * b - c);
+
+	if (discriminant < 0.0f) {
+		return false;
+	}
+
+    t = -b - sqrt(discriminant);
+    bool inside = false;
+
+    if(t < 0.0){
+        inside = true;
+        t = -b + sqrt(discriminant);
+    }
 	
     if(t < tmax && t > tmin) {
         rec.t = t;
         rec.pos = pointOnRay(r, rec.t);
-        rec.normal = normal;
+        rec.normal = s.radius >= 0.0 ? normalize(rec.pos - center) : normalize(center - rec.pos);
         return true;
     }
-    else return false;
+    
+    return false;
 }
 
 struct pointLight {
