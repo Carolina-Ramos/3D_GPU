@@ -33,7 +33,7 @@ bool hit_world(Ray r, float tmin, float tmax, out HitRecord rec)
     {
         hit = true;
         rec.material = createDiffuseMaterial(vec3(0.2, 0.95, 0.1));
-        //rec.material = createDiffuseMaterial(vec3(0.4, 0.2, 0.1));
+    
     }
 
     if(hit_sphere(
@@ -172,7 +172,6 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec)
 
     float diffuse, specular;
 
-   //INSERT YOUR CODE HERE
     vec3 L = (pl.pos - rec.pos);
     if(dot(L, rec.normal) > 0.0) {
         Ray feeler = createRay(rec.pos + epsilon * rec.normal, normalize(L));
@@ -250,9 +249,7 @@ vec3 rayColor(Ray r)
             {   
                 r = scatterRay;
                 throughput *= atten;
-                /*r.o = scatterRay.o;
-                r.d = scatterRay.d;
-                r.t = scatterRay.t;*/
+        
             }
         }
         else  //background

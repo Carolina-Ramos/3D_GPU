@@ -166,7 +166,7 @@ Material createDiffuseMaterial(vec3 albedo)
     m.type = MT_DIFFUSE;
     m.albedo = albedo;
     m.specColor = vec3(0.0);
-    m.roughness = 1.0;  //ser usado na iluminação direta
+    m.roughness = 1.0;  //be used in direct lighting
     m.refIdx = 1.0;
     m.refractColor = vec3(0.0);
     m.emissive = vec3(0.0);
@@ -235,7 +235,6 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
     vec3 recPos;
     if(rec.material.type == MT_DIFFUSE)
     {
-        //arranjar para não ficar igual ao prof
         vec3 normal = rec.normal;
         if(dot(rIn.d, rec.normal) > 0.0)
             normal *= -1.0;
@@ -316,9 +315,6 @@ Triangle createTriangle(vec3 v0, vec3 v1, vec3 v2)
 
 bool hit_triangle(Triangle triangle, Ray r, float tmin, float tmax, out HitRecord rec)
 {
-    //INSERT YOUR CODE HERE
-    //calculate a valid t and normal
-
     vec3 normal = vec3(0.0f);
     float t = 0.0f;
 
@@ -402,7 +398,6 @@ MovingSphere createMovingSphere(vec3 center0, vec3 center1, float radius, float 
 vec3 center(MovingSphere mvsphere, float time)
 {
     return mvsphere.center0 + (mvsphere.center1 - mvsphere.center0) * ((time - mvsphere.time0) / (mvsphere.time1 - mvsphere.time0));
-    //return vec3(0.0,0.0,0.0);
 }
 
 
@@ -413,13 +408,9 @@ vec3 center(MovingSphere mvsphere, float time)
 
 bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec)
 {
-     //INSERT YOUR CODE HERE
-    //calculate a valid t and normal
-	
     float t = 0.0f;
 
 	vec3 L = r.o - s.center;
-	//float a = r.direction * r.direction;
 	float b = dot(L, r.d); //dot product of the above vector and the ray's vector
 	float c = dot(L, L) - s.radius * s.radius;
 
@@ -454,19 +445,15 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec)
 
 bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec)
 {
-     //INSERT YOUR CODE HERE
-    //calculate a valid t and normal
-	
     float t = 0.0f;
     vec3 center = center(s, r.t);
-    // https://www.scratchapixel.com/code.php?id=10&origin=/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes
+   
 	vec3 L = r.o - center;
-	//float a = r.direction * r.direction;
 	float b = dot(L, r.d); //dot product of the above vector and the ray's vector
 	float c = dot(L, L) - s.radius * s.radius;
 
     // if origin of ray is outside the sphere and r is pointing away from it
-    if(c>0.0 && b >0.0){
+    if(c>0.0 && b > 0.0){
         return false;
     }
     
