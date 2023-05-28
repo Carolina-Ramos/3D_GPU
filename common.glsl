@@ -247,7 +247,7 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
     {
        //consider fuzzy reflections
         vec3 refl = reflect(rIn.d, rec.normal);
-        recPos = epsilon + rec.pos * rec.normal;
+        recPos = rec.pos + rec.normal * epsilon;
         vec2 perturbation = rec.material.roughness * randomInUnitDisk(gSeed);
         vec3 scatteredDirection = normalize(refl + vec3(perturbation, 0.0));
         rScattered= createRay(recPos, scatteredDirection, rIn.t);
@@ -267,7 +267,7 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
         {
             outwardNormal = -rec.normal;
             niOverNt = rec.material.refIdx;
-            atten = exp(-rec.material.refractColor*rec.t); //beer law
+            atten = exp(-rec.material.refractColor * rec.t); //beer law
         }
         else  //hit from outside
         {
