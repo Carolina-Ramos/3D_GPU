@@ -249,7 +249,6 @@ vec3 rayColor(Ray r)
             {   
                 r = scatterRay;
                 throughput *= atten;
-        
             }
         }
         else  //background
