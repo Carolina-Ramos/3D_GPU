@@ -322,9 +322,6 @@ bool hit_triangle(Triangle triangle, Ray r, float tmin, float tmax, out HitRecor
     vec3 normal = vec3(0.0f);
     float t = 0.0f;
 
-    // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
-	// https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
-
     vec3 v0 = triangle.a, v1 = triangle.b, v2 = triangle.c;
 
 	// Find vectors for two edges sharing v0 
@@ -421,7 +418,6 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec)
 	
     float t = 0.0f;
 
-    // https://www.scratchapixel.com/code.php?id=10&origin=/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes
 	vec3 L = r.o - s.center;
 	//float a = r.direction * r.direction;
 	float b = dot(L, r.d); //dot product of the above vector and the ray's vector
