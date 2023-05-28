@@ -167,39 +167,56 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec)
 {
     vec3 diffCol, specCol;
     vec3 colorOut = vec3(0.0, 0.0, 0.0);
-    float shininess = 0.5f;
+    float shininess;
     HitRecord dummy;
-    //int numSamples = 3;
 
-   /* for (int p = 0; p < numSamples; p++) {
-        float u = rand(vec2(0.0, 1.0));
-        float v = rand(vec2(0.0, 1.0));
+    float diffuse, specular;
 
-        vec3 pos = pl.pos + 0.5f * (u + 0.5f) + 0.5f * (v + 0.5f);*/
+   //INSERT YOUR CODE HERE
+    vec3 L = (pl.pos - rec.pos);
+    if(dot(L, rec.normal) > 0.0) {
+        Ray feeler = createRay(rec.pos + epsilon * rec.normal, normalize(L));
+        float len = length(pl.pos - rec.pos);
 
-        vec3 n = normalize(rec.normal);
-    
-        // Calculate the distance from the hit point to the light source
-        float lightDist = distance(pl.pos, rec.pos + n * epsilon);
-        // Calculate the direction from the hit point to the light source
-        vec3 lightDir = normalize(pl.pos - (rec.pos + n * epsilon));
-
-        // Create a shadow ray from the hit point towards the light source
-        Ray ray = createRay(rec.pos + epsilon * n, lightDir);
-
-        // Check if the shadow ray intersects any objects in the scene
-        if (!hit_world(ray, epsilon, lightDist - epsilon, dummy))
+        if(hit_world(feeler, 0.0, len, dummy)) // If true, then we're in shadow. Return color as 0
         {
-            vec3 h = normalize(lightDir - r.d);
-            diffCol = rec.material.albedo * rec.material.refIdx * max((n * lightDir), 0.0f) * shininess;
-            specCol = rec.material.specColor * rec.material.refIdx * pow(max(dot(h, n), 0.0f), rec.material.roughness) * shininess;
-            colorOut += pl.color * (diffCol + specCol);
+            return colorOut;
         }
-  //  }
+
+        if(rec.material.type == MT_DIFFUSE) {
+            specCol = vec3(0.1);
+            diffCol = rec.material.albedo;
+            shininess = 10.0;
+
+            diffuse = 1.0;
+            specular = 0.0;
+        } else if(rec.material.type == MT_METAL) {
+            specCol = rec.material.albedo;
+            diffCol = vec3(0.0);
+            shininess = 100.0;
+
+            diffuse = 0.0;
+            specular = 1.0;
+        } else { // Dialletric Materials
+            specCol = vec3(0.004);
+            diffCol = vec3(0.0);
+            shininess = 100.0;
+
+            diffuse = 0.0;
+            specular = 1.0;
+        }
+
+        L = normalize(L);
+        vec3 H = normalize((L - r.d));
+
+        diffCol = (pl.color * diffCol) * max(dot(rec.normal, L), 0.0);
+        specCol = (pl.color * specCol) * pow(max(dot(H, rec.normal), 0.0), shininess);
+
+        colorOut = diffCol * diffuse + specCol * specular;
+    }
 
     return colorOut;
 }
-
 
 #define MAX_BOUNCES 10
 
@@ -219,10 +236,8 @@ vec3 rayColor(Ray r)
         if(hit_world(r, epsilon, 10000.0, rec))
         {
             //calculate direct lighting with 3 white point lights:
-            //bool outside = dot(r.d, rec.normal); //mais coisas
             {
                 for(int d = 0; d < 3; d++) {
-                
                     vec3 directLight = directlighting(pointL[d], r, rec);
                     col += directLight * throughput;
                 }
@@ -234,16 +249,11 @@ vec3 rayColor(Ray r)
             if(scatter(r, rec, atten, scatterRay))
             {   
                 r = scatterRay;
+                throughput *= atten;
                 /*r.o = scatterRay.o;
                 r.d = scatterRay.d;
                 r.t = scatterRay.t;*/
             }
-            else
-            {
-                col += throughput * vec3(0.0);
-                break;
-            }
-        
         }
         else  //background
         {
