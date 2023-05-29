@@ -136,12 +136,19 @@ Ray getRay(Camera cam, vec2 pixel_sample)  //rnd pixel_sample viewport coordinat
 {
     vec2 ls = cam.lensRadius * randomInUnitDisk(gSeed);  //ls - lens sample for DOF
     float time = cam.time0 + hash1(gSeed) * (cam.time1 - cam.time0);
+
+    vec3 ps;
+    ps.x = cam.width * ((pixel_sample.x) / iResolution.x - 0.5);
+    ps.y = cam.height * ((pixel_sample.y) / iResolution.y - 0.5);
+
+    vec3 p;
+    p.x = ps.x * cam.focusDist;
+    p.y = ps.y * cam.focusDist;
+    p.z = - cam.focusDist * cam.planeDist;
     
     vec3 eye_offset = cam.eye + (cam.u * ls.x) + (cam.v * ls.y);
 
-	vec3 ray_dir = cam.u * cam.width * ((pixel_sample.x) / iResolution.x - 0.5) +
-		cam.v * cam.height * ((pixel_sample.y) / iResolution.y - 0.5) -
-		cam.n *(cam.planeDist);
+    vec3 ray_dir = cam.u * (p.x - ls.x) + cam.v * (p.y - ls.y) + cam.n * p.z;
     
     return createRay(eye_offset, normalize(ray_dir), time);
 }
