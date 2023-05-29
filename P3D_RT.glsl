@@ -172,6 +172,11 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec)
 
     float diffuse, specular;
 
+    //SOFT SHADOWS
+    float lightSize = 2.0;
+    gSeed = float(baseHash(floatBitsToUint(gl_FragCoord.xy))) / float(0xffffffffU) + iTime;
+    pl.pos = pl.pos + lightSize * (randomUnitVector(gSeed) + 0.5 ) + lightSize * (randomUnitVector(gSeed) + 0.5);
+
     vec3 L = (pl.pos - rec.pos);
     if(dot(L, rec.normal) > 0.0) {
         Ray feeler = createRay(rec.pos + epsilon * rec.normal, normalize(L));
